@@ -60,11 +60,6 @@ jobs:
         image: amazon/dynamodb-local:latest
         ports:
           - 8000:8000
-        options: >-
-          --health-cmd "curl -f http://localhost:8000/ || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -73,6 +68,18 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+
+      - name: Wait for DynamoDB Local
+        run: |
+          echo "Waiting for DynamoDB Local to be ready..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/ > /dev/null 2>&1; then
+              echo "DynamoDB Local is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
 
       - name: Build and Install with Maven (for testing only)
         env:
