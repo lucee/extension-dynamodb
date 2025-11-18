@@ -21,6 +21,7 @@
         <luceeCoreVersion>7.0.0.110</luceeCoreVersion>
         <releaseType>server</releaseType>
         <label>DynamoDB Extension</label>
+        <class>org.lucee.extension.aws.dynamodb.DynamoDBCache</class>
         <camelname>DynamoDB</camelname>
         <release.url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</release.url>
         <snapshot.url>https://oss.sonatype.org/content/repositories/snapshots/</snapshot.url>
@@ -138,6 +139,7 @@
                                     <property name="mvnGroupId" value="${mvnGroupId}"/>
                                     <property name="mvnGroupPath" value="${mvnGroupPath}"/>
                                     <property name="mvnArtifactId" value="${mvnArtifactId}"/>
+                                    <property name="class" value="${class}"/>
                                     
                                     <property name="maven.username" value="${env.MAVEN_USERNAME}"/>
                                     <property name="maven.password" value="${env.MAVEN_PASSWORD}"/>

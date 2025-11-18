@@ -8,8 +8,9 @@
     <property name="lib" location="source/java/libs"/>
     <property name="src" location="source/java/src"/>
     <property name="srcImg" location="source/images"/>
-      <property name="srcFld" location="source/fld"/>
-      <property name="srcTld" location="source/tld"/>
+    <property name="srcFld" location="source/fld"/>
+    <property name="srcTld" location="source/tld"/>
+    <property name="srcCDDriver" location="source/context/admin/cdriver"/>
     <property name="temp" location="temp"/>
     <property name="build" location="build"/>
     <property name="dist"  location="target"/>
@@ -19,9 +20,6 @@
         </fileset>
     </path>
 
-
-
-  
     <target name="init">
         <!-- Create the time stamp -->
         <tstamp/>
@@ -160,6 +158,27 @@ cache: "[{'class':'${class}','maven':'${mvnGroupId}:${mvnArtifactId}:${bundlever
             description="generate the distribution" >
         
        
+    <!-- copy the /context/admin/cdriver/DynamoDB.cfc -->
+        
+        <copy 
+            file="${srcCDDriver}/DynamoDB.cfc" 
+            tofile="${dist}/extension/context/admin/cdriver/${camelname}.cfc" />
+        <replaceregexp 
+          file="${dist}/extension/context/admin/cdriver/${camelname}.cfc" 
+          match="\{class\}" 
+          replace="${class}" 
+          byline="true"/>
+        <replaceregexp 
+          file="${dist}/extension/context/admin/cdriver/${camelname}.cfc" 
+          match="\{label\}" 
+          replace="${label}" 
+          byline="true"/>
+        <replaceregexp 
+          file="${dist}/extension/context/admin/cdriver/${camelname}.cfc" 
+          match="\{description\}" 
+          replace="${description}" 
+          byline="true"/>
+
 
         <!-- copy the logo -->
         <copy todir="${dist}/extension/META-INF">
