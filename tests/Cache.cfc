@@ -18,7 +18,14 @@
 ---><cfscript>
 component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
     variables.cacheName="dynamodb";
+    
     function beforeAll() {
+        // Get DynamoDB endpoint from environment (for testing with DynamoDB Local)
+        var dynamoHost = server.system.environment.DYNAMODB_ENDPOINT ?: "http://localhost:8000";
+        var accessKey = server.system.environment.AWS_ACCESS_KEY_ID ?: "dummy";
+        var secretKey = server.system.environment.AWS_SECRET_ACCESS_KEY ?: "dummy";
+        var region = server.system.environment.AWS_REGION ?: "us-east-1";
+        
         // TODO find the version automatically
         application action="update" caches = {
             "dynamodb" : {
@@ -27,9 +34,10 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 , "storage": false
                 , "custom": {
                     "table":"test",
-                    "accessKeyId":"dummy",
-                    "secretkey":"dummy",
-                    "region":"us-east-1",
+                    "accessKeyId": accessKey,
+                    "secretkey": secretKey,
+                    "region": region,
+                    "host": dynamoHost,
                     "liveTimeout":3600000,
                     "log":"application"
             }
