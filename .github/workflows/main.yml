@@ -47,10 +47,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     env:
+      DYNAMODB_ENDPOINT: http://localhost:8000
+      AWS_ACCESS_KEY_ID: "dummy"
+      AWS_SECRET_ACCESS_KEY: "dummy"
+      AWS_REGION: us-east-1
       LUCEE_TEST_VERSIONS_JAKARTA: ${{ vars.LUCEE_TEST_VERSIONS_JAKARTA }}
     strategy:
       matrix:
         lucee: ${{ fromJSON(vars.LUCEE_TEST_VERSIONS_JAKARTA) }}
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/ || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +95,6 @@ jobs:
           repository: lucee/lucee
           path: lucee
           ref: ${{ matrix.lucee.branch }}
-
       - name: Run Lucee Test Suite
         uses: lucee/script-runner@main
         with:
@@ -94,7 +107,6 @@ jobs:
           testLabels: dynamodb
           testAdditional: ${{ github.workspace }}/tests
           LUCEE_ADMIN_PASSWORD: admin
-
   deploy:
     runs-on: ubuntu-latest
     needs: [build-and-test]
