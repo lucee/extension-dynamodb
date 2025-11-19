@@ -116,7 +116,7 @@ jobs:
           LUCEE_ADMIN_PASSWORD: admin
   deploy:
     runs-on: ubuntu-latest
-    needs: [build-and-test]
+    needs: [setup,build-and-test]
     if: always() && needs.build-and-test.result == 'success'
     steps:
       - name: Checkout repository
@@ -150,6 +150,12 @@ jobs:
           echo "MAVEN_USERNAME (masked): ${MAVEN_USERNAME}"
           echo "MAVEN_USERNAME length: ${#MAVEN_USERNAME}"
           printf "MAVEN_USERNAME sha256: %s\n" "$(printf %s "$MAVEN_USERNAME" | sha256sum | cut -d' ' -f1)"
+      - name: Extract version number
+        id: extract-version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
       - name: Build and Deploy with Maven
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
