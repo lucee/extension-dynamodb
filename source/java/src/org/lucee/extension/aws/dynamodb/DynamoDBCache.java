@@ -16,6 +16,7 @@ import lucee.loader.engine.CFMLEngine;
 import lucee.loader.engine.CFMLEngineFactory;
 import lucee.loader.util.Util;
 import lucee.runtime.config.Config;
+import lucee.runtime.exp.PageException;
 import lucee.runtime.type.Array;
 import lucee.runtime.type.Struct;
 import lucee.runtime.util.Cast;
@@ -47,6 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateTimeToLiveRequest;
 
 public class DynamoDBCache extends CacheSupport {
+	private static final Map<String, String> TTL_ATTR_NAMES = Map.of("#ttl", "ttl");
 
 	private String accessKeyId;
 	private String secretAccessKey;
@@ -55,6 +57,7 @@ public class DynamoDBCache extends CacheSupport {
 	private String region;
 	private long liveTimeout;
 	private Log log;
+	private CFMLEngine eng;
 
 	@Override
 	public void init(Config config, String cacheName, Struct arguments) throws IOException {
@@ -68,7 +71,7 @@ public class DynamoDBCache extends CacheSupport {
 	public void init(Config config, Struct arguments) throws IOException {
 		// this.cl = arguments.getClass().getClassLoader();
 
-		CFMLEngine eng = CFMLEngineFactory.getInstance();
+		eng = CFMLEngineFactory.getInstance();
 
 		if (config == null) config = eng.getThreadConfig();
 
@@ -125,15 +128,16 @@ public class DynamoDBCache extends CacheSupport {
 	@Override
 	public CacheEntry getCacheEntry(String key) throws IOException {
 		try {
-			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build())).build();
+			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build()))
+					// No projection - fetch everything since CacheEntry needs all metadata
+					.build();
 
 			GetItemResponse response = getClient().getItem(getRequest);
 
-			if (!response.hasItem()) {
+			if (!valid(response)) {
 				throw CFMLEngineFactory.getInstance().getExceptionUtil().createApplicationException("key [" + key + "] does not exist in table [" + tableName + "]");
 			}
 
-			// Pass the entire item map, not just the value
 			return new DynamoDBCacheEntry(key, response.item(), log);
 
 		}
@@ -145,11 +149,13 @@ public class DynamoDBCache extends CacheSupport {
 	@Override
 	public CacheEntry getCacheEntry(String key, CacheEntry defaultValue) {
 		try {
-			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build())).build();
+			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build()))
+					// No projection - fetch everything since CacheEntry needs all metadata
+					.build();
 
 			GetItemResponse response = getClient().getItem(getRequest);
 
-			if (!response.hasItem()) {
+			if (!valid(response)) {
 				return defaultValue;
 			}
 
@@ -159,29 +165,6 @@ public class DynamoDBCache extends CacheSupport {
 		}
 		catch (Exception e) {
 			return defaultValue;
-		}
-	}
-
-	public Object get(String key) throws IOException {
-		try {
-			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build())).build();
-
-			GetItemResponse response = getClient().getItem(getRequest);
-
-			if (!response.hasItem()) {
-				return null;
-			}
-
-			AttributeValue valueAttr = response.item().get("value");
-			if (valueAttr == null) {
-				return null;
-			}
-
-			return Coder.evaluate(valueAttr);
-
-		}
-		catch (Exception e) {
-			throw handleException(e);
 		}
 	}
 
@@ -241,12 +224,13 @@ public class DynamoDBCache extends CacheSupport {
 	public boolean contains(String key) throws IOException {
 		try {
 			GetItemRequest getRequest = GetItemRequest.builder().tableName(tableName).key(Map.of("cacheKey", AttributeValue.builder().s(key).build()))
-					.projectionExpression("cacheKey") // Only fetch the key for efficiency
+					.projectionExpression("cacheKey, #ttl") // Fetch key and TTL
+					.expressionAttributeNames(TTL_ATTR_NAMES) // ttl is a reserved word
 					.build();
 
 			GetItemResponse response = getClient().getItem(getRequest);
-			return response.hasItem();
 
+			return valid(response);
 		}
 		catch (Exception e) {
 			throw handleException(e);
@@ -262,7 +246,15 @@ public class DynamoDBCache extends CacheSupport {
 					.build();
 
 			DeleteItemResponse response = getClient().deleteItem(deleteRequest);
-			return response.attributes() != null && !response.attributes().isEmpty();
+
+			// Check if item existed AND was not expired
+			Map<String, AttributeValue> oldItem = response.attributes();
+			if (oldItem == null || oldItem.isEmpty()) {
+				return false; // Item didn't exist
+			}
+
+			// Item existed, but was it valid (not expired)?
+			return valid(oldItem);
 
 		}
 		catch (Exception e) {
@@ -311,6 +303,11 @@ public class DynamoDBCache extends CacheSupport {
 
 				// Process items
 				for (Map<String, AttributeValue> item: response.items()) {
+
+					// Skip invalid/expired items
+					if (!valid(item)) {
+						continue;
+					}
 					// Get the key
 					AttributeValue keyAttr = item.get("cacheKey");
 					if (keyAttr == null || keyAttr.s() == null) {
@@ -402,6 +399,11 @@ public class DynamoDBCache extends CacheSupport {
 
 				// Process items
 				for (Map<String, AttributeValue> item: response.items()) {
+					// Skip invalid/expired items
+					if (!valid(item)) {
+						continue;
+					}
+
 					// Get the key
 					AttributeValue keyAttr = item.get("cacheKey");
 					if (keyAttr == null || keyAttr.s() == null) {
@@ -451,28 +453,24 @@ public class DynamoDBCache extends CacheSupport {
 
 				// Process items
 				for (Map<String, AttributeValue> item: response.items()) {
-					try {
-						// Get the key
-						AttributeValue keyAttr = item.get("cacheKey");
-						if (keyAttr == null || keyAttr.s() == null) {
-							continue;
-						}
-						String key = keyAttr.s();
-
-						// Create CacheEntry for filtering
-						DynamoDBCacheEntry entry = new DynamoDBCacheEntry(key, item, log);
-
-						// Apply filter if provided
-						if (filter == null || filter.accept(entry)) {
-							result.add(entry);
-						}
-
+					// Skip invalid/expired items
+					if (!valid(item)) {
+						continue;
 					}
-					catch (Exception e) {
-						if (log != null) {
-							log.error("dynamodb-cache", "Failed to process item - " + e.getMessage());
-						}
-						// Skip items that can't be processed
+
+					// Get the key
+					AttributeValue keyAttr = item.get("cacheKey");
+					if (keyAttr == null || keyAttr.s() == null) {
+						continue;
+					}
+					String key = keyAttr.s();
+
+					// Create CacheEntry for filtering
+					DynamoDBCacheEntry entry = new DynamoDBCacheEntry(key, item, log);
+
+					// Apply filter if provided
+					if (filter == null || filter.accept(entry)) {
+						result.add(entry);
 					}
 				}
 
@@ -601,8 +599,7 @@ public class DynamoDBCache extends CacheSupport {
 
 	@Override
 	public CacheEntry getQuiet(String key, CacheEntry defaultValue) {
-		// TODO Auto-generated method stub
-		return null;
+		return getCacheEntry(key, defaultValue);
 	}
 
 	@Override
@@ -734,6 +731,31 @@ public class DynamoDBCache extends CacheSupport {
 
 	private IOException handleException(Exception e) {
 		return CFMLEngineFactory.getInstance().getExceptionUtil().toIOException(e);
+	}
+
+	private final boolean valid(GetItemResponse response) throws PageException {
+		// Only check expiration if item exists
+		if (!response.hasItem()) {
+			return false; // No item means not expired (just doesn't exist)
+		}
+
+		Map<String, AttributeValue> item = response.item();
+		if (item.containsKey("ttl")) {
+			return (System.currentTimeMillis() / 1000) < (eng.getCastUtil().toLongValue(item.get("ttl").n()));
+		}
+		return true;
+	}
+
+	private boolean valid(Map<String, AttributeValue> item) throws PageException {
+		if (item == null || item.isEmpty()) {
+			return false;
+		}
+
+		if (item.containsKey("ttl")) {
+			long ttlSeconds = eng.getCastUtil().toLongValue(item.get("ttl").n());
+			return (System.currentTimeMillis() / 1000) < ttlSeconds;
+		}
+		return true;
 	}
 
 }

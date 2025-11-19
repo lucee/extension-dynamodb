@@ -204,7 +204,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     expect(cacheIdExists(id=key, cacheName=variables.cacheName)).toBe(true);
                     
                     // Wait for expiration (1.5 seconds to be safe)
-                    sleep(2000);
+                    sleep(1500);
                     
                     // Should no longer exist
                     expect(cacheIdExists(id=key, cacheName=variables.cacheName)).toBe(false);
