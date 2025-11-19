@@ -19,7 +19,7 @@
 component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
     
     variables.cacheName = "dynamodb";
-    variables.sleepInterval = 10; // ms, used for timing-sensitive operations
+    variables.sleepInterval = 50; // ms, used for timing-sensitive operations
     
     function beforeAll() {
         // Get DynamoDB endpoint from environment (for testing with DynamoDB Local)
