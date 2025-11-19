@@ -20,7 +20,10 @@ import lucee.runtime.type.Array;
 import lucee.runtime.type.Struct;
 import lucee.runtime.util.Cast;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BillingMode;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
@@ -31,11 +34,17 @@ import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexDescription;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TableDescription;
+import software.amazon.awssdk.services.dynamodb.model.TableStatus;
+import software.amazon.awssdk.services.dynamodb.model.TimeToLiveSpecification;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.UpdateTimeToLiveRequest;
 
 public class DynamoDBCache extends CacheSupport {
 
@@ -102,6 +111,9 @@ public class DynamoDBCache extends CacheSupport {
 		if (log != null) {
 			log.debug("dynamodb", "configuration: host:" + host + ";");
 		}
+
+		// Ensure table exists
+		ensureTableExists();
 
 	}
 
@@ -593,6 +605,109 @@ public class DynamoDBCache extends CacheSupport {
 	public int clear() throws IOException {
 		// Remove all items by passing null filter (accepts everything)
 		return remove((CacheKeyFilter) null);
+	}
+
+	private void ensureTableExists() throws IOException {
+		try {
+			DynamoDbClient client = getClient();
+
+			// Check if table exists
+			try {
+				DescribeTableRequest describeRequest = DescribeTableRequest.builder().tableName(tableName).build();
+				client.describeTable(describeRequest);
+
+				if (log != null) {
+					log.debug("dynamodb-cache", "Table '" + tableName + "' already exists");
+				}
+				return; // Table exists, we're done
+
+			}
+			catch (ResourceNotFoundException e) {
+				// Table doesn't exist, create it
+				if (log != null) {
+					log.info("dynamodb-cache", "Table '" + tableName + "' does not exist, creating...");
+				}
+			}
+
+			// Create table
+			CreateTableRequest createRequest = CreateTableRequest.builder().tableName(tableName)
+					.keySchema(KeySchemaElement.builder().attributeName("cacheKey").keyType(KeyType.HASH).build())
+					.attributeDefinitions(AttributeDefinition.builder().attributeName("cacheKey").attributeType(ScalarAttributeType.S).build())
+					.billingMode(BillingMode.PAY_PER_REQUEST) // On-demand billing, no capacity planning needed
+					.build();
+
+			client.createTable(createRequest);
+
+			if (log != null) {
+				log.info("dynamodb", "Table '" + tableName + "' created successfully");
+			}
+
+			// Wait for table to be active
+			waitForTableActive(client, tableName);
+
+			// Enable TTL
+			enableTTL(client);
+
+		}
+		catch (Exception e) {
+			throw handleException(e);
+		}
+	}
+
+	private void waitForTableActive(DynamoDbClient client, String tableName) throws IOException {
+		try {
+			int maxAttempts = 30;
+			int attempt = 0;
+
+			while (attempt < maxAttempts) {
+				try {
+					DescribeTableRequest describeRequest = DescribeTableRequest.builder().tableName(tableName).build();
+
+					DescribeTableResponse response = client.describeTable(describeRequest);
+
+					if (response.table().tableStatus() == TableStatus.ACTIVE) {
+						if (log != null) {
+							log.debug("dynamodb-cache", "Table '" + tableName + "' is now active");
+						}
+						return;
+					}
+
+					Thread.sleep(1000); // Wait 1 second before next check
+					attempt++;
+
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IOException("Interrupted while waiting for table to become active", e);
+				}
+			}
+
+			throw new IOException("Timeout waiting for table '" + tableName + "' to become active");
+
+		}
+		catch (Exception e) {
+			throw handleException(e);
+		}
+	}
+
+	private void enableTTL(DynamoDbClient client) {
+		try {
+			UpdateTimeToLiveRequest ttlRequest = UpdateTimeToLiveRequest.builder().tableName(tableName)
+					.timeToLiveSpecification(TimeToLiveSpecification.builder().enabled(true).attributeName("ttl").build()).build();
+
+			client.updateTimeToLive(ttlRequest);
+
+			if (log != null) {
+				log.info("dynamodb", "TTL enabled on table '" + tableName + "'");
+			}
+
+		}
+		catch (Exception e) {
+			// TTL enablement is best-effort, don't fail if it doesn't work
+			if (log != null) {
+				log.warn("dynamodb", "Could not enable TTL: " + e.getMessage());
+			}
+		}
 	}
 
 	//////////////////// helper methods /////////////////////
