@@ -26,12 +26,12 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
         var accessKey = server.system.environment.AWS_ACCESS_KEY_ID ?: "dummy";
         var secretKey = server.system.environment.AWS_SECRET_ACCESS_KEY ?: "dummy";
         var region = server.system.environment.AWS_REGION ?: "us-east-1";
-        
+        var version = server.system.environment.EXTENSION_VERSION;
         // Configure DynamoDB cache
         application action="update" caches = {
             "dynamodb" : {
                 "class": 'org.lucee.extension.aws.dynamodb.DynamoDBCache',
-                "maven": 'org.lucee:dynamodb:1.0.0.0-ALPHA',
+                "maven": 'org.lucee:dynamodb:#version#',
                 "storage": false,
                 "custom": {
                     "table": "test",
