@@ -189,16 +189,17 @@ public class DynamoDBCache extends CacheSupport {
 	public void put(String key, Object value, Long idleTime, Long until) throws IOException {
 		try {
 			long nowMillis = System.currentTimeMillis();
-			// long nowSeconds = System.currentTimeMillis() / 1000;
 
 			// Build update expressions
 			StringBuilder updateExpr = new StringBuilder("SET ");
 			updateExpr.append("#value = :value, ");
-			updateExpr.append("updatedTime = :now, ");
-			updateExpr.append("createdTime = if_not_exists(createdTime, :now)"); // Only set if new
+			updateExpr.append("#updatedTime = :now, ");
+			updateExpr.append("#createdTime = if_not_exists(#createdTime, :now)"); // Only set if new
 
 			Map<String, String> attrNames = new HashMap<>();
 			attrNames.put("#value", "value"); // "value" is a reserved word in DynamoDB
+			attrNames.put("#updatedTime", "updatedTime");
+			attrNames.put("#createdTime", "createdTime");
 
 			Map<String, AttributeValue> attrValues = new HashMap<>();
 			attrValues.put(":value", Coder.toAttributeValue(value));
@@ -207,18 +208,21 @@ public class DynamoDBCache extends CacheSupport {
 			// TTL
 			Long expirationTime = calculateExpiration(nowMillis, idleTime, until);
 			if (expirationTime != null) {
-				updateExpr.append(", ttl = :ttl");
+				updateExpr.append(", #ttl = :ttl");
+				attrNames.put("#ttl", "ttl"); // "ttl" is a reserved word
 				attrValues.put(":ttl", AttributeValue.builder().n(String.valueOf(expirationTime)).build());
 			}
 
 			// idle
 			if (idleTime != null && idleTime > 0) {
-				updateExpr.append(", idle = :idle");
+				updateExpr.append(", #idle = :idle");
+				attrNames.put("#idle", "idle");
 				attrValues.put(":idle", AttributeValue.builder().n(String.valueOf(idleTime)).build());
 			}
 			// until
 			if (until != null && until > 0) {
-				updateExpr.append(", until = :until");
+				updateExpr.append(", #until = :until");
+				attrNames.put("#until", "until");
 				attrValues.put(":until", AttributeValue.builder().n(String.valueOf(until)).build());
 			}
 
