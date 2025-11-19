@@ -181,9 +181,10 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     expect(structKeyExists(allValues, keys[1])).toBe(true);
                     expect(allValues[keys[1]]).toBe("value1");
                     
-                } finally {
+                }
+                finally {
                     // Cleanup
-                    for (var k in keys) {
+                    loop array=keys item="local.k" {
                         try { cacheDelete(id=k, cacheName=variables.cacheName); } catch(any e) {}
                     }
                 }
@@ -230,7 +231,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     expect(newCount).toBeGTE(initialCount + 3);
                     
                 } finally {
-                    for (var k in keys) {
+                    loop array=keys item="local.k" {
                         try { cacheDelete(id=k, cacheName=variables.cacheName); } catch(any e) {}
                     }
                 }
@@ -280,7 +281,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     
                 } finally {
                     // Already cleared, but just in case
-                    for (var k in keys) {
+                    loop array=keys item="local.k" {
                         try { cacheDelete(id=k, cacheName=variables.cacheName); } catch(any e) {}
                     }
                 }
