@@ -19,7 +19,6 @@
 component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
     
     variables.cacheName = "dynamodb";
-    variables.sleepInterval = 50; // ms, used for timing-sensitive operations
     
     function beforeAll() {
         // Get DynamoDB endpoint from environment (for testing with DynamoDB Local)
@@ -58,13 +57,13 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 
                 try {
                     cachePut(id=key, value=val, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     expect(cacheIdExists(id=key, cacheName=variables.cacheName)).toBe(true);
                     expect(cacheGet(id=key, cacheName=variables.cacheName)).toBe(val);
                     
                     cacheDelete(id=key, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     expect(cacheIdExists(id=key, cacheName=variables.cacheName)).toBe(false);
                 } finally {
@@ -82,7 +81,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 
                 try {
                     cachePut(id=key, value=val, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     var cachedVal = cacheGet(id=key, cacheName=variables.cacheName);
                     expect(isNull(cachedVal)).toBe(false);
@@ -100,7 +99,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 
                 try {
                     cachePut(id=key, value=val, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     var cachedVal = cacheGet(id=key, cacheName=variables.cacheName);
                     expect(isNull(cachedVal)).toBe(false);
@@ -122,7 +121,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 
                 try {
                     cachePut(id=key, value=val, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     var cachedVal = cacheGet(id=key, cacheName=variables.cacheName);
                     expect(isNull(cachedVal)).toBe(false);
@@ -142,7 +141,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 
                 try {
                     cachePut(id=key, value=val, cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     var cachedVal = cacheGet(id=key, cacheName=variables.cacheName);
                     expect(isNull(cachedVal)).toBe(false);
@@ -165,7 +164,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     cachePut(id=keys[1], value="value1", cacheName=variables.cacheName);
                     cachePut(id=keys[2], value="value2", cacheName=variables.cacheName);
                     cachePut(id=keys[3], value="value3", cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     // Test cacheGetAllIds with filter
                     var allIds = cacheGetAllIds(filter=prefix & "*", cacheName=variables.cacheName);
@@ -198,7 +197,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 try {
                     // Store with 1 second expiration
                     cachePut(id=key, value=val, timeSpan=createTimeSpan(0,0,0,1), cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     // Should exist immediately
                     expect(cacheIdExists(id=key, cacheName=variables.cacheName)).toBe(true);
@@ -225,7 +224,7 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     for (var i = 1; i <= 3; i++) {
                         cachePut(id=keys[i], value="value" & i, cacheName=variables.cacheName);
                     }
-                    //sleep(variables.sleepInterval);
+                    
                     
                     var newCount = cacheCount(cacheName=variables.cacheName);
                     expect(newCount).toBeGTE(initialCount + 3);
@@ -265,14 +264,14 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                     for (var i = 1; i <= 3; i++) {
                         cachePut(id=keys[i], value="value" & i, cacheName=variables.cacheName);
                     }
-                    //sleep(variables.sleepInterval);
+                    
                     
                     // Verify they exist
                     expect(cacheIdExists(id=keys[1], cacheName=variables.cacheName)).toBe(true);
                     
                     // Clear with filter
                     cacheClear(filter=prefix & "*", cacheName=variables.cacheName);
-                    //sleep(variables.sleepInterval);
+                    
                     
                     // Verify they're gone
                     expect(cacheIdExists(id=keys[1], cacheName=variables.cacheName)).toBe(false);
