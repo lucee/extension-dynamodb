@@ -727,7 +727,7 @@ public class DynamoDBCache extends CacheSupport {
 
 		// 'until' is absolute expiration time (epoch milliseconds)
 		if (until != null && until > 0) {
-			return until / 1000; // Convert to seconds for DynamoDB TTL
+			return (nowMillis + until) / 1000; // Convert to seconds for DynamoDB TTL
 		}
 
 		// 'idleTime' is relative time in milliseconds
