@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.lucee.extension.aws.dynamodb.util.Coder;
+import org.lucee.extension.aws.dynamodb.util.print;
 
 import lucee.commons.io.cache.CacheEntry;
 import lucee.commons.io.cache.CacheEntryFilter;
@@ -741,6 +742,11 @@ public class DynamoDBCache extends CacheSupport {
 
 		Map<String, AttributeValue> item = response.item();
 		if (item.containsKey("ttl")) {
+			print.e("--- valid ---");
+			print.e("- " + item.get("ttl").n());
+			print.e("- " + (System.currentTimeMillis() / 1000));
+			print.e("- " + (eng.getCastUtil().toLongValue(item.get("ttl").n())));
+			print.e(item);
 			return (System.currentTimeMillis() / 1000) < (eng.getCastUtil().toLongValue(item.get("ttl").n()));
 		}
 		return true;
