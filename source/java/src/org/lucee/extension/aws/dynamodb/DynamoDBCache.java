@@ -194,6 +194,10 @@ public class DynamoDBCache extends CacheSupport {
 			if (expirationTime != null) {
 				updateExpr.append(", #ttl = :ttl");
 				attrNames.put("#ttl", "ttl"); // "ttl" is a reserved word
+				print.e("--- debug ---");
+				print.e(expirationTime);
+				print.e(String.valueOf(expirationTime));
+				print.e(String.valueOf(expirationTime));
 				attrValues.put(":ttl", AttributeValue.builder().n(String.valueOf(expirationTime)).build());
 			}
 
@@ -715,6 +719,10 @@ public class DynamoDBCache extends CacheSupport {
 	//////////////////// helper methods /////////////////////
 
 	private Long calculateExpiration(long nowMillis, Long idleTime, Long until) {
+		print.e("--- calculateExpiration ---");
+		print.e(nowMillis);
+		print.e(idleTime);
+		print.e(until);
 		// TODO check if that is correct
 
 		// 'until' is absolute expiration time (epoch milliseconds)
