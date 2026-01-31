@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.lucee</groupId>
     <artifactId>dynamodb-extension</artifactId>
-    <version>1.0.0.0-BETA</version>
+    <version>1.0.0.0-RC</version>
     <packaging>pom</packaging>
     <name>DynamoDB Extension</name>
 
@@ -136,6 +136,8 @@
                                     <property name="description" value="${project.description}"/>
                                     <property name="camelname" value="${camelname}"/>
                                     <property name="maven.goal" value="${goal}"/>
+                                    <property name="groupId" value="${project.groupId}"/>
+                                    <property name="artifactId" value="${project.artifactId}"/>
                                     <property name="mvnGroupId" value="${mvnGroupId}"/>
                                     <property name="mvnGroupPath" value="${mvnGroupPath}"/>
                                     <property name="mvnArtifactId" value="${mvnArtifactId}"/>
