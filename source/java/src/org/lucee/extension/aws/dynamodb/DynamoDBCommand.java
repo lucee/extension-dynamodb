@@ -90,11 +90,19 @@ public class DynamoDBCommand extends BIF implements Function {
 
 			// DELETE
 			else if (action.equalsIgnoreCase("deleteItem")) {
-				Struct keyData = secondAsStruct(eng, pc, action, args);
+				Struct data = secondAsStruct(eng, pc, action, args);
 
-				DeleteItemRequest request = DeleteItemRequest.builder().tableName(cache.getTableName()).key(toAttributeMap(keyData))
-						// Optional: return the item as it was before it was deleted
-						.returnValues(keyData.containsKey(RETURN_VALUES) ? cast.toString(keyData.get(RETURN_VALUES)) : "NONE").build();
+				// Create a copy or filter the struct so only the PK goes into .key()
+				Struct keyOnly = (Struct) data.duplicate(true);
+				String returnValues = "NONE";
+
+				if (keyOnly.containsKey(RETURN_VALUES)) {
+					// Extract it for the builder and remove it from the attributes map
+					returnValues = cast.toString(keyOnly.removeEL(RETURN_VALUES));
+				}
+
+				DeleteItemRequest request = DeleteItemRequest.builder().tableName(cache.getTableName()).key(toAttributeMap(keyOnly)) // Now this ONLY contains {"pk": "..."}
+						.returnValues(returnValues).build();
 
 				return fromAttributeMap(cache.getClient().deleteItem(request).attributes());
 			}
