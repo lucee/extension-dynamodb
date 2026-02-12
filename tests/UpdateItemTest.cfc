@@ -41,13 +41,16 @@ component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
                 var pk = "upd_2";
                 DynamoDBCommand("putItem", { "pk": pk, "status": "init" }, variables.cacheName);
                 
-                var result = DynamoDBCommand("updateItem", {
-                    "key": { "pk": pk },
-                    "UpdateExpression": "SET #s = :val",
-                    "ExpressionAttributeNames": { "#s": "status" },
-                    "ExpressionAttributeValues": { ":val": "active" },
-                    "ReturnValues": "UPDATED_NEW"
-                }, variables.cacheName);
+                var result = DynamoDBCommand(
+                    "updateItem", {
+                        "key": { "pk": pk },
+                        "UpdateExpression": "SET ##s = :val",
+                        "ExpressionAttributeNames": { "##s": "status" },
+                        "ExpressionAttributeValues": { ":val": "active" },
+                        "ReturnValues": "UPDATED_NEW"
+                    }, 
+                    variables.cacheName
+                );
                 
                 expect( result.status ).toBe( "active" );
             });
