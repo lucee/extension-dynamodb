@@ -163,6 +163,15 @@ cache: "[{'class':'${class}','maven':'${mvnGroupId}:${mvnArtifactId}:${bundlever
     <!-- Updated dist target to depend on maven-build -->
     <target name="dist" depends="createManifest"
             description="generate the distribution" >
+    
+
+    <!-- copy the flds necessary -->
+        <copy file="${srcFld}/function.fld" tofile="${dist}/extension/flds/lucee-dynamodb.fld" />
+        <replaceregexp 
+          file="${dist}/extension/flds/lucee-dynamodb.fld" 
+          match="\{maven\}" 
+          replace="${mvnGroupId}:${mvnArtifactId}:${bundleversion}" 
+          byline="true"/>
         
        
     <!-- copy the /context/admin/cdriver/DynamoDB.cfc -->

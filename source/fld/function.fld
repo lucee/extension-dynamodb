@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE func-lib PUBLIC "-//Lucee//DTD CFML Function Library 1.0//EN"
+	"dtd/web-cfmfunctionlibrary_1_0.dtd">
+<!-- http://www.getrailo.com/j2ee/dtd/web-jspfunctionlibrary_1_0.dtd -->
+<func-lib>
+	<flib-version>1.00</flib-version>
+	<short-name>DynamoDB</short-name>
+	<uri>http://redis.lucee.org</uri>
+	<display-name>DynamoDB</display-name>
+	<description>
+		DynamoDB functions
+	</description>
+
+	
+	<!-- DynamoDBCommand -->
+	<function>
+		<name>DynamoDBCommand</name>
+		<class maven="{maven}">org.lucee.extension.aws.dynamodb.DynamoDBCommand</class>
+		<keywords>cache,dynamodb</keywords>
+		<description></description>
+		<argument>
+			<name>action</name>
+			<type>string</type>
+			<required>true</required>
+			<description></description>
+	    </argument>
+	    <argument>
+			<name>params</name>
+			<alias>arguments</alias>
+			<type>struct</type>
+			<required>false</required>
+			<description></description>
+	    </argument>
+	    <argument>
+			<name>cachename</name>
+			<type>string</type>
+			<required>false</required>
+			<description></description>
+	    </argument>
+		<return>
+			<type>any</type>
+		</return>
+	</function>
+
+
+
+</func-lib>

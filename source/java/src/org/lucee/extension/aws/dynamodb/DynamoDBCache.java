@@ -120,7 +120,7 @@ public class DynamoDBCache extends CacheSupport {
 
 	}
 
-	private DynamoDbClient getClient() {
+	DynamoDbClient getClient() {
 		// TODO may keep a local copy?
 		return AmazonDynamoDBClient.get(accessKeyId, secretAccessKey, host, region, liveTimeout, log);
 	}
@@ -714,6 +714,10 @@ public class DynamoDBCache extends CacheSupport {
 			return (System.currentTimeMillis() / 1000) < ttlSeconds;
 		}
 		return true;
+	}
+
+	public String getTableName() {
+		return tableName;
 	}
 
 }
