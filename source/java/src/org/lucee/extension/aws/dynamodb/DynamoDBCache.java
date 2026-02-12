@@ -59,6 +59,8 @@ public class DynamoDBCache extends CacheSupport {
 	private Log log;
 	private CFMLEngine eng;
 
+	private String primaryKey;
+
 	@Override
 	public void init(Config config, String cacheName, Struct arguments) throws IOException {
 		init(config, arguments);
@@ -102,6 +104,10 @@ public class DynamoDBCache extends CacheSupport {
 		if (Util.isEmpty(host, true)) host = caster.toString(arguments.get("host", null), null);
 		if (Util.isEmpty(host, true)) host = caster.toString(arguments.get("server", null), null);
 		if (Util.isEmpty(host, true)) host = caster.toString(arguments.get("endpoint", null), null);
+
+		// primaryKey
+		primaryKey = caster.toString(arguments.get("primaryKey", null), null);
+		if (Util.isEmpty(primaryKey, true)) primaryKey = "cacheKey";
 
 		liveTimeout = caster.toLongValue(arguments.get("liveTimeout", null), 3600000L);
 
@@ -653,7 +659,7 @@ public class DynamoDBCache extends CacheSupport {
 			}
 
 			// If we reach here, we are creating the table
-			this.primaryKeyName = "cacheKey"; // Ensure we use our preferred default for new tables
+			this.primaryKeyName = primaryKey; // Ensure we use our preferred default for new tables
 
 			CreateTableRequest createRequest = CreateTableRequest.builder().tableName(tableName)
 					.keySchema(KeySchemaElement.builder().attributeName(primaryKeyName).keyType(KeyType.HASH).build())

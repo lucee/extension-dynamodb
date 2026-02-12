@@ -16,10 +16,8 @@
 * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 * 
 ---><cfscript>
-component extends="org.lucee.cfml.test.LuceeTestCase" labels="dynamodb" {
+component extends="Abstr" labels="dynamodb" {
     
-    variables.cacheName = "dynamodb";
-
     function run( testResults, testBox ) {
         describe( "DynamoDB Query & Scan Actions", function() {
             
