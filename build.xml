@@ -203,11 +203,16 @@ cache: "[{'class':'${class}','maven':'${mvnGroupId}:${mvnArtifactId}:${bundlever
             </fileset>
         </copy>
 
-
-
         <!-- Zip everything -->
         <zip destfile="${dist}/${filename}-${bundleversion}.lex">
             <zipfileset dir="${dist}/extension"/>
+        </zip>
+
+        <!-- Lite artifact: same but without bundled Maven dependencies -->
+        <zip destfile="${dist}/${filename}-${bundleversion}.lite.lex">
+            <zipfileset dir="${dist}/extension">
+                <exclude name="maven/**"/>
+            </zipfileset>
         </zip>
     </target>
 
