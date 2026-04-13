@@ -52,10 +52,10 @@ jobs:
       AWS_SECRET_ACCESS_KEY: "dummy"
       AWS_REGION: us-east-1
       EXTENSION_VERSION: ${{ needs.setup.outputs.version }}  
-      LUCEE_TEST_VERSIONS_JAKARTA: ${{ vars.LUCEE_TEST_VERSIONS_JAKARTA }}
+      LUCEE_TEST_VERSIONS_7: ${{ vars.LUCEE_TEST_VERSIONS_7 }}
     strategy:
       matrix:
-        lucee: ${{ fromJSON(vars.LUCEE_TEST_VERSIONS_JAKARTA) }}
+        lucee: ${{ fromJSON(vars.LUCEE_TEST_VERSIONS_7) }}
     services:
       dynamodb:
         image: amazon/dynamodb-local:latest
