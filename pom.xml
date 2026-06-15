@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.lucee</groupId>
     <artifactId>dynamodb-extension</artifactId>
-    <version>1.0.0.9</version>
+    <version>1.0.0.10</version>
     <packaging>pom</packaging>
     <name>DynamoDB Extension</name>
 
@@ -14,7 +14,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <id>E0ACA85A-22DB-48FF-B2D6CD89D5D1709F</id>
-        <image>https://raw.githubusercontent.com/lucee/extension-dynamodb/master/source/images/logo.png</image>
+        <image>https://raw.githubusercontent.com/lucee/extension-dynamodb/main/source/images/logo.png</image>
         <buildDate>${maven.build.timestamp}</buildDate>
         <bundlename>dynamodb.extension</bundlename>
         <mvnGroupId>org.lucee</mvnGroupId>
